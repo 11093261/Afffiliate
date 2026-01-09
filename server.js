@@ -18,9 +18,13 @@ const PORT = process.env.PORT || 4500
 console.log('PORT:', process.env.PORT)
 const app = express()
 dbconnect()
+// CORRECT SYNTAX
 app.use(cors({
-    origin:"http://localhost:3000",
-    credentials:true
+    origin: [
+        "http://affiliate-drontend-by6eimarb-11093261s-projects.vercel.app",
+        "http://localhost:3000"
+    ],
+    credentials: true
 }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))

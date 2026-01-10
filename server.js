@@ -21,7 +21,7 @@ dbconnect()
 // CORRECT SYNTAX
 app.use(cors({
     origin: [
-        "http://affiliate-drontend-by6eimarb-11093261s-projects.vercel.app",
+        "https://affiliate-marketing-bay.vercel.app",
         "http://localhost:3000"
     ],
     credentials: true
@@ -29,6 +29,9 @@ app.use(cors({
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan("dev"))
+app.get('/', (req, res) => {
+  res.send('Affiliate API is running!');
+});
 app.use("html",(req,res)=>{
     res.status(401)
     if(req.accepts("html")){

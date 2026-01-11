@@ -17,44 +17,84 @@ const getAllUser = async (req, res) => {
 };
 
 const createNewUser = async (req, res) => {
+  console.log("🔵 [DEBUG] /api/register route called!");
+  console.log("📥 Received body:", req.body);
+  
   try {
-    const { username, email, phone, terms, password,company } = req.body;
+    const { username, email, phone, terms, password, company } = req.body;
+    
+    console.log("🔍 [DEBUG] Parsed fields:", { username, email, phone, terms, password });
+    
+    // Check what's actually being received
+    console.log("🔍 [DEBUG] Field check - username exists?", !!username);
+    console.log("🔍 [DEBUG] Field check - email exists?", !!email);
+    console.log("🔍 [DEBUG] Field check - phone exists?", !!phone);
+    console.log("🔍 [DEBUG] Field check - terms exists?", terms);
+    console.log("🔍 [DEBUG] Field check - password exists?", !!password);
+    
     if (!username || !email || !phone || !terms || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+      console.log("❌ [DEBUG] Validation failed! Missing fields detected");
+      return res.status(400).json({ 
+        success: false, 
+        message: "All fields are required",
+        details: { username: !!username, email: !!email, phone: !!phone, terms: !!terms, password: !!password }
+      });
     }
+    
+    console.log("🔍 [DEBUG] Checking for duplicate email...");
     const duplicate = await User.findOne({ email }).exec();
     if (duplicate) {
-      return res.status (409).json({ message: "Email already exists" });
+      console.log("❌ [DEBUG] Email already exists:", email);
+      return res.status(409).json({ 
+        success: false,
+        message: "Email already exists" 
+      });
     }
-
+    
+    console.log("🔍 [DEBUG] Hashing password...");
     const hashpwd = await bcrypt.hash(password, 10);
+    
+    console.log("🔍 [DEBUG] Creating user in database...");
     const newUser = await User.create({
       username,
       phone,
       password: hashpwd,
       email,
-      company,
       terms,
-        onboarding: {
+      company: company || "",
+      onboarding: {
         profileCompleted: false,
         paymentCompleted: false,
         firstLinkCreated: false,
         tutorialCompleted: false
-    },
-    stats: {
+      },
+      stats: {
         clicks: 0,
         conversions: 0,
         commissions: 0,
         payoutThreshold: 0
-    }
+      }
     });
+    
+    console.log("✅ [DEBUG] User created successfully:", newUser._id);
+    
     const userResponse = { ...newUser._doc };
     delete userResponse.password;
     
-    res.status(201).json({ message: "User created", user: userResponse });
+    res.status(201).json({ 
+      success: true, 
+      message: "User created", 
+      user: userResponse 
+    });
+    
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    console.error("🔥 [DEBUG] CRITICAL ERROR in createNewUser:", error);
+    console.error("🔥 [DEBUG] Error stack:", error.stack);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error",
+      error: error.message 
+    });
   }
 };
 

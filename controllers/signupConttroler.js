@@ -18,7 +18,7 @@ const getAllUser = async (req, res) => {
 
 const createNewUser = async (req, res) => {
   try {
-    const { username, email, phone, terms, password } = req.body;
+    const { username, email, phone, terms, password,company } = req.body;
     if (!username || !email || !phone || !terms || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -33,6 +33,7 @@ const createNewUser = async (req, res) => {
       phone,
       password: hashpwd,
       email,
+      company,
       terms,
         onboarding: {
         profileCompleted: false,

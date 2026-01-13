@@ -1,23 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const dashboardController = require('../controllers/userController');
-const authMiddleware = require('../middleware/userMiddleware'); // Add this
+const userController = require('../controllers/userController');
+const authMiddleware = require('../middleware/userMiddleware');
 
-router.get(
-  '/dashboard', 
-  authMiddleware, // Add authentication middleware
-  dashboardController.getDashboardData
-);
+// Apply auth middleware to all routes
+router.use(authMiddleware);
 
-router.put(
-  '/onboarding/:task', 
-  authMiddleware, // Add authentication middleware
-  dashboardController.updateOnboardingTask
-);
+// Dashboard routes
+router.get('/dashboard', userController.getDashboardData);
+router.put('/onboarding/task', userController.updateOnboardingTask);
+router.put('/profile', userController.updateProfile);
+router.put('/payment-method', userController.updatePaymentMethod);
 
-router.post(
-  '/join', 
-  authMiddleware, // Add authentication middleware
-  dashboardController.joinProgram
-);
-module.exports = router
+module.exports = router;

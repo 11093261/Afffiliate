@@ -138,25 +138,21 @@ const deleteUser = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-const getAuser = async(req,res)=>{
+const getAuser = async (req, res) => {
   try {
-    const user = await User.findById(req.body.userId)
-  console.log(user)
-    res.send({
-      success:true,
-      message:"user fetched sucessfully",
-      data:user
-    })
+    const user = await User.findById(req.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.json({
+      success: true,
+      message: "User fetched successfully",
+      data: user
+    });
   } catch (error) {
-    res.send({
-      success:false,
-      message:error.message
-    })
-    
+    res.status(500).json({ success: false, message: error.message });
   }
-}
-
+};
 // Fix login function
 const login = async(req, res) => {
   try {

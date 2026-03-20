@@ -1,4 +1,4 @@
-const User = require('../models/user');
+const User = require('../models/Signup');   // <-- changed from '../models/user'
 const mongoose = require('mongoose');
 
 // Get user dashboard data
@@ -6,11 +6,8 @@ exports.getDashboardData = async (req, res) => {
   try {
     console.log('=== Dashboard Request ===');
     console.log('req.userId:', req.userId);
-    console.log('req.user:', req.user);
     
-    // Use userId from middleware (it's a string)
     const userId = req.userId;
-    
     if (!userId) {
       return res.status(401).json({ 
         success: false,
@@ -20,10 +17,7 @@ exports.getDashboardData = async (req, res) => {
     
     console.log('Looking for user with ID:', userId);
     
-    // Find user by ID - make sure userId is a valid ObjectId string
     let user;
-    
-    // Check if userId is a valid MongoDB ObjectId
     if (mongoose.Types.ObjectId.isValid(userId)) {
       user = await User.findById(userId).select('-password');
     } else {
@@ -43,12 +37,15 @@ exports.getDashboardData = async (req, res) => {
 
     console.log('Found user:', user.email);
 
+    // Map username to name if not present (for backward compatibility)
+    const displayName = user.username || user.email.split('@')[0];
+
     // Calculate onboarding progress
     const onboardingTasks = user.onboarding || {};
     const completedTasks = Object.values(onboardingTasks).filter(task => task).length;
     const onboardingProgress = Math.round((completedTasks / 4) * 100);
 
-    // Prepare stats with default values
+    // Prepare stats
     const stats = {
       clicks: user.stats?.clicks || 0,
       conversions: user.stats?.conversions || 0,
@@ -61,14 +58,10 @@ exports.getDashboardData = async (req, res) => {
       success: true,
       user: {
         _id: user._id,
-        name: user.name || 'User',
-        email: user.email || '',
-        profile: user.profile || {
-          bio: '',
-          website: '',
-          socialLinks: {}
-        },
-        paymentMethod: user.paymentMethod || null
+        name: displayName,
+        email: user.email,
+        profile: user.profile || { bio: '', website: '', socialLinks: {} },
+        paymentMethod: user.paymentMethod || { method: 'paypal', paypalEmail: '' }
       },
       onboarding: {
         profileCompleted: user.onboarding?.profileCompleted || false,
@@ -138,22 +131,14 @@ exports.updateOnboardingTask = async (req, res) => {
 
     const validTasks = ['profileCompleted', 'paymentCompleted', 'firstLinkCreated', 'tutorialCompleted'];
     
-    if (!task) {
+    if (!task || !validTasks.includes(task)) {
       return res.status(400).json({ 
         success: false,
-        message: 'Task is required' 
-      });
-    }
-    
-    if (!validTasks.includes(task)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid task' 
+        message: 'Invalid or missing task' 
       });
     }
 
     const user = await User.findById(userId);
-    
     if (!user) {
       return res.status(404).json({ 
         success: false,
@@ -173,11 +158,9 @@ exports.updateOnboardingTask = async (req, res) => {
 
     // Toggle the task
     user.onboarding[task] = !user.onboarding[task];
-    
     await user.save();
 
-    // Calculate new progress
-    const completedTasks = Object.values(user.onboarding).filter(task => task).length;
+    const completedTasks = Object.values(user.onboarding).filter(t => t).length;
     const onboardingProgress = Math.round((completedTasks / 4) * 100);
 
     res.json({
@@ -199,7 +182,6 @@ exports.updateOnboardingTask = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.userId;
-    
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -208,14 +190,9 @@ exports.updateProfile = async (req, res) => {
     }
     
     const { name, bio, website, socialLinks } = req.body;
-    
-    console.log('=== Update Profile Request ===');
-    console.log('User ID:', userId);
-    console.log('Update data:', { name, bio, website, socialLinks });
+    console.log('=== Update Profile Request ===', { userId, name, bio, website, socialLinks });
 
-    // Find user
     const user = await User.findById(userId);
-    
     if (!user) {
       return res.status(404).json({ 
         success: false,
@@ -223,24 +200,19 @@ exports.updateProfile = async (req, res) => {
       });
     }
 
-    // Update user fields
-    if (name !== undefined && name !== '') {
-      user.name = name;
+    // Update username if provided
+    if (name && name.trim() !== '') {
+      user.username = name.trim();
     }
     
     // Initialize profile if it doesn't exist
     if (!user.profile) {
-      user.profile = {
-        bio: '',
-        website: '',
-        socialLinks: {}
-      };
+      user.profile = { bio: '', website: '', socialLinks: {} };
     }
     
-    // Update profile fields
     if (bio !== undefined) user.profile.bio = bio;
     if (website !== undefined) user.profile.website = website;
-    if (socialLinks !== undefined && typeof socialLinks === 'object') {
+    if (socialLinks && typeof socialLinks === 'object') {
       user.profile.socialLinks = {
         twitter: socialLinks.twitter || '',
         facebook: socialLinks.facebook || '',
@@ -248,11 +220,9 @@ exports.updateProfile = async (req, res) => {
       };
     }
     
-    // Mark profile as completed if not already
-    if (!user.onboarding?.profileCompleted) {
-      if (!user.onboarding) user.onboarding = {};
-      user.onboarding.profileCompleted = true;
-    }
+    // Mark profile completed
+    if (!user.onboarding) user.onboarding = {};
+    user.onboarding.profileCompleted = true;
 
     await user.save();
 
@@ -261,7 +231,7 @@ exports.updateProfile = async (req, res) => {
       message: 'Profile updated successfully',
       user: {
         _id: user._id,
-        name: user.name,
+        name: user.username,
         email: user.email,
         profile: user.profile
       },
@@ -280,7 +250,6 @@ exports.updateProfile = async (req, res) => {
 exports.updatePaymentMethod = async (req, res) => {
   try {
     const userId = req.userId;
-    
     if (!userId) {
       return res.status(401).json({ 
         success: false,
@@ -289,13 +258,9 @@ exports.updatePaymentMethod = async (req, res) => {
     }
     
     const { method, paypalEmail, bankName, accountNumber, accountName, swiftCode } = req.body;
-
-    console.log('=== Update Payment Method ===');
-    console.log('User ID:', userId);
-    console.log('Payment data:', req.body);
+    console.log('=== Update Payment Method ===', { userId, method });
 
     const user = await User.findById(userId);
-    
     if (!user) {
       return res.status(404).json({ 
         success: false,
@@ -303,10 +268,8 @@ exports.updatePaymentMethod = async (req, res) => {
       });
     }
 
-    // Create payment method object
-    const paymentMethod = {
-      method: method || 'paypal'
-    };
+    // Build paymentMethod object
+    const paymentMethod = { method: method || 'paypal' };
     
     if (method === 'paypal' && paypalEmail) {
       paymentMethod.paypalEmail = paypalEmail;
@@ -317,14 +280,11 @@ exports.updatePaymentMethod = async (req, res) => {
       paymentMethod.swiftCode = swiftCode || '';
     }
     
-    // Update user payment method
     user.paymentMethod = paymentMethod;
     
-    // Mark payment as completed if not already
-    if (!user.onboarding?.paymentCompleted) {
-      if (!user.onboarding) user.onboarding = {};
-      user.onboarding.paymentCompleted = true;
-    }
+    // Mark payment completed
+    if (!user.onboarding) user.onboarding = {};
+    user.onboarding.paymentCompleted = true;
 
     await user.save();
 

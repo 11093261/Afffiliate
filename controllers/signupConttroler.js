@@ -1,11 +1,11 @@
 const User = require("../models/Signup");
-const bcrypt = require("bcryptjs")
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-require("dotenv").config()
+require("dotenv").config();
 
 const getAllUser = async (req, res) => {
   try {
-    const users = await User.find().select('-password'); 
+    const users = await User.find().select('-password');
     if (users.length === 0) {
       return res.status(404).json({ message: "No users found" });
     }
@@ -19,41 +19,40 @@ const getAllUser = async (req, res) => {
 const createNewUser = async (req, res) => {
   console.log("🔵 [DEBUG] /api/register route called!");
   console.log("📥 Received body:", req.body);
-  
+
   try {
     const { username, email, phone, terms, password, company } = req.body;
-    
+
     console.log("🔍 [DEBUG] Parsed fields:", { username, email, phone, terms, password });
-    
-    // Check what's actually being received
+
     console.log("🔍 [DEBUG] Field check - username exists?", !!username);
     console.log("🔍 [DEBUG] Field check - email exists?", !!email);
     console.log("🔍 [DEBUG] Field check - phone exists?", !!phone);
     console.log("🔍 [DEBUG] Field check - terms exists?", terms);
     console.log("🔍 [DEBUG] Field check - password exists?", !!password);
-    
+
     if (!username || !email || !phone || !terms || !password) {
       console.log("❌ [DEBUG] Validation failed! Missing fields detected");
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: "All fields are required",
         details: { username: !!username, email: !!email, phone: !!phone, terms: !!terms, password: !!password }
       });
     }
-    
+
     console.log("🔍 [DEBUG] Checking for duplicate email...");
     const duplicate = await User.findOne({ email }).exec();
     if (duplicate) {
       console.log("❌ [DEBUG] Email already exists:", email);
-      return res.status(409).json({ 
+      return res.status(409).json({
         success: false,
-        message: "Email already exists" 
+        message: "Email already exists"
       });
     }
-    
+
     console.log("🔍 [DEBUG] Hashing password...");
     const hashpwd = await bcrypt.hash(password, 10);
-    
+
     console.log("🔍 [DEBUG] Creating user in database...");
     const newUser = await User.create({
       username,
@@ -75,25 +74,25 @@ const createNewUser = async (req, res) => {
         payoutThreshold: 0
       }
     });
-    
+
     console.log("✅ [DEBUG] User created successfully:", newUser._id);
-    
+
     const userResponse = { ...newUser._doc };
     delete userResponse.password;
-    
-    res.status(201).json({ 
-      success: true, 
-      message: "User created", 
-      user: userResponse 
+
+    res.status(201).json({
+      success: true,
+      message: "User created",
+      user: userResponse
     });
-    
+
   } catch (error) {
     console.error("🔥 [DEBUG] CRITICAL ERROR in createNewUser:", error);
     console.error("🔥 [DEBUG] Error stack:", error.stack);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -127,17 +126,18 @@ const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
     const deletedUser = await User.findByIdAndDelete(id);
-    
+
     if (!deletedUser) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     res.json({ message: "User deleted" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 const getAuser = async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password');
@@ -153,53 +153,54 @@ const getAuser = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-// Fix login function
-const login = async(req, res) => {
+
+// Fix login function with debug logs
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ message: "All fields required" });
     }
-    
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    
+
     const match = await bcrypt.compare(password, user.password);
-    if(!match){
-      return res.status(401).json({message:"Invalid credentials"})
+    if (!match) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
-    
+
+    // Debug: log the first 10 characters of the secret used for signing
+    console.log("🔐 [LOGIN] Signing with ACCESS_TOKEN_SECRET (first 10):",
+      process.env.ACCESS_TOKEN_SECRET?.substring(0, 10));
+
     const accessToken = jwt.sign(
-      { 
-        userId: user._id.toString(), 
-        // email: user.email,
-        // username: user.username 
-      }, 
+      {
+        userId: user._id.toString(),
+      },
       process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "10h"}
+      { expiresIn: "10h" }
     );
 
     const refreshToken = jwt.sign(
       { userId: user._id },
       process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: "7d"}
+      { expiresIn: "7d" }
     );
-    
+
     // Save refresh token to user document
     user.refreshToken = refreshToken;
     await user.save();
-    
+
     // Return user info (excluding sensitive data)
     res.json({
-      accessToken,  
+      accessToken,
       userId: user._id,
-      // username: user.username,
-      // email: user.email
     });
-    
+
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -214,7 +215,7 @@ const refreshToken = async (req, res) => {
 
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     const user = await User.findById(decoded.userId);
-    
+
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
@@ -231,6 +232,7 @@ const refreshToken = async (req, res) => {
     return res.status(403).json({ message: "Invalid token" });
   }
 };
+
 module.exports = {
   getAllUser,
   createNewUser,

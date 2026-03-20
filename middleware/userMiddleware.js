@@ -22,6 +22,10 @@ const verifyAdminToken = async (req, res, next) => {
             });
         }
         
+        // 🔐 DEBUG: Log the first 10 characters of the secret used for verification
+        console.log("🔐 [MIDDLEWARE] Verifying with ACCESS_TOKEN_SECRET (first 10):",
+            process.env.ACCESS_TOKEN_SECRET?.substring(0, 10));
+        
         // Verify token
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         

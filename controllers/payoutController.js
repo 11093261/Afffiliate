@@ -26,19 +26,26 @@ const getApayout = async(req,res)=>{
 
 const createApayout = async(req,res)=>{
     try {
-        const {email,accountNumber, routingNumber,walletAddress}= req.body
-        if(!email || !accountNumber || !routingNumber || !walletAddress){
+        const {email,accountNumber,currency, routingNumber,walletAddress,threshold,schedule,method}= req.body
+        console.log(threshold)
+        if(!email || !accountNumber || !routingNumber || !walletAddress || !threshold || !schedule || !method || !currency){
             return res.status(401).json("you have a missing field")
         }
         const createdpayout = new payout({
+            method,
             email,
             accountNumber,
             routingNumber,
-            walletAddress
+            walletAddress,
+            threshold,
+            schedule,
+            currency
 
         })
         console.log(createdpayout)
-        await createdpayout.save()
+        const savedData = await createdpayout.save()
+        console.log(savedData)
+
     } catch (error) {
         console.log(error)
         

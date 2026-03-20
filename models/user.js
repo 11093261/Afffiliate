@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
-
 const UserSchema = new mongoose.Schema({
+  // userId:{
+  //   type:mongoose.Types.ObjectId,
+  //   ref:"Signup"
+  // },
+
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   onboarding: {
@@ -34,10 +38,10 @@ const UserSchema = new mongoose.Schema({
     website: String,
     socialLinks: {
       twitter: String,
-      instagram: String,
-      youtube: String
-    },
-    niche: [String]
+      facebook: String,
+      instagram: String
+    }
+    // niche: [String]
   },
   createdAt: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now }

@@ -1,28 +1,40 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/userMiddleware');
+const userController = require('../controllers/userController');
 
-// Import controller functions
-const dashboardController = require('../controllers/DashboardController');
+// Add debug route to test authentication
+router.get('/debug-auth', authMiddleware, (req, res) => {
+  res.json({
+    success: true,
+    message: 'Authentication is working',
+    user: req.user,
+    userId: req.userId,
+    timestamp: new Date().toISOString()
+  });
+});
 
-// Apply authentication middleware to all routes
-router.use(authMiddleware);
+// Add health check route (no auth needed)
+router.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'API is running',
+    timestamp: new Date().toISOString()
+  });
+});
 
-// ==================== EXACT ROUTES FROM FRONTEND ====================
+// ==================== MAIN ROUTES ====================
 
-// GET /api/users/dashboard - Get dashboard data
-router.get('/users/dashboard', dashboardController.getDashboardData);
-
-// GET /api/programs/recommended - Get recommended programs
-router.get('/programs/recommended', dashboardController.getRecommendedPrograms);
+// GET /api/dashboard - Get dashboard data
+router.get('/dashboard', authMiddleware, userController.getDashboardData);
 
 // PUT /api/users/onboarding/task - Update onboarding task
-router.put('/users/onboarding/task', dashboardController.updateOnboardingTask);
+router.put('/users/onboarding/task', authMiddleware, userController.updateOnboardingTask);
 
-// POST /api/affiliate/links - Create affiliate link
-router.post('/affiliate/links', dashboardController.createAffiliateLink);
+// PUT /api/profile - Update user profile
+router.put('/profile', authMiddleware, userController.updateProfile);
 
-// GET /api/affiliate/stats/performance - Get performance stats
-router.get('/affiliate/stats/performance', dashboardController.getPerformanceStats);
+// PUT /api/payment-method - Update payment method
+router.put('/payment-method', authMiddleware, userController.updatePaymentMethod);
 
 module.exports = router;

@@ -26,22 +26,42 @@ app.use(cors({
     ],
     credentials: true
 }))
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan("dev"))
+// Add this AFTER app.use(express.json()) but BEFORE app.use("/api", ...)
 app.get('/', (req, res) => {
   res.send('Affiliate API is running!');
 });
-app.use("html",(req,res)=>{
-    res.status(401)
-    if(req.accepts("html")){
-        res.sendFile(path.join(__dirname,"views","404.html"))
-    }
-    if(req.accepts("json")){
-        res.status(404).json({message:"404 Not Found"})
-    }else{
-        res.send("txt").json({message:"404 not Found"})
-    }
+// app.use("html",(req,res)=>{
+  app.use((req, res, next) => {
+    console.log("🔍 [REQUEST DEBUG]");
+    console.log(`Method: ${req.method}`);
+    console.log(`Path: ${req.originalUrl}`);
+    console.log("Headers:", req.headers);
+    console.log("Body:", req.body);
+    console.log("-------------------");
+    next();
+  });
+  //     if(req.accepts("html")){
+    //         res.sendFile(path.join(__dirname,"views","404.html"))
+    //     }
+    //     res.status(401)
+//     if(req.accepts("json")){
+//         res.status(404).json({message:"404 Not Found"})
+//     }else{
+//         res.send("txt").json({message:"404 not Found"})
+//     }
+// })
+app.use((req, res, next) => {
+  console.log("=== NEW REQUEST ===");
+  console.log("Method:", req.method);
+  console.log("Path:", req.path);
+  console.log("Headers:", req.headers);
+  console.log("Body:", req.body);
+  console.log("==================");
+  next();
 })
 app.use("/api", userRoute)
 app.use("/api", merchantRoute)

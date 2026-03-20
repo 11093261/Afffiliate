@@ -142,6 +142,7 @@ const deleteUser = async (req, res) => {
 const getAuser = async(req,res)=>{
   try {
     const user = await User.findById(req.body.userId)
+  console.log(user)
     res.send({
       success:true,
       message:"user fetched sucessfully",

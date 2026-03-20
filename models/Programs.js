@@ -22,6 +22,48 @@ const programSchema = new mongoose.Schema({
   popularity: {
     type: Number,
     default: 0
+  },
+  rating:{
+    type:Number,
+    required:true
+    
+  },
+  terms:{
+    type:String,
+    required:true
+
+  },
+  cookieDuration:{
+    type:String,
+    required:true
+  },
+  payoutMethods:{
+    type:[String],
+    required:true
+  },
+  promotionalMaterials:{
+    type:[
+      {
+        id:Number,
+        type:String,
+        size:String,
+        preview:String,
+        content:String,
+        terms:String
+
+
+      }
+    ]
+    
+
+  },
+  averageEarning:{
+    type:String,
+    required:true
+  },
+  performance:{
+    type:String,
+    required:true
   }
 }, {
   timestamps: true

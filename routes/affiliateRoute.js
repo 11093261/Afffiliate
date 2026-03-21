@@ -8,7 +8,7 @@ const userController = require('../controllers/userController'); // Contains cre
 router.get('/links', authMiddleware, affiliateController.getUserLinks);
 
 // POST /api/affiliate/links – create a new affiliate link
-// router.post('/links', authMiddleware, userController.createAffiliateLink);
+router.post('/links', authMiddleware, affiliateController.createAffiliateLink);
 
 // DELETE /api/affiliate/links/:id – delete a link
 router.delete('/links/:id', authMiddleware, affiliateController.deleteUserLink);

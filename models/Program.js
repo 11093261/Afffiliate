@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const AffiliateProgramSchema = new mongoose.Schema({
+const program= new mongoose.Schema({
   productname: { 
     type: String, 
     required: [true, 'Product name is required'],
@@ -95,8 +95,8 @@ const AffiliateProgramSchema = new mongoose.Schema({
 });
 
 // Virtual for commission percentage string
-AffiliateProgramSchema.virtual('commissionPercentage').get(function() {
+program.virtual('commissionPercentage').get(function() {
   return `${this.commission}%`;
 });
 
-module.exports = mongoose.model('AffiliateProgram', AffiliateProgramSchema);
+module.exports = mongoose.model('program', program); 

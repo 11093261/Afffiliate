@@ -65,7 +65,7 @@ app.use((req, res, next) => {
 })
 app.use("/api", userRoute)
 app.use("/api", merchantRoute)
-app.use("/api", affiliateRoute)
+app.use("/api/affiliate", affiliateRoute)
 app.use("/api",signupRoute)
 app.use("/api",productRoute)
 app.use("/api",payoutRoute)
